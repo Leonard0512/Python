@@ -1,0 +1,104 @@
+##NFCU Spider##
+
+import scrapy
+
+#define the spider parameters
+class NFCUSpider(scrapy.Spider):
+
+    #how to call the spider
+    name = "NFCU"
+
+    #URL that spider is crawling to
+    start_urls = [
+        "https://www.navyfederal.org/"
+    ]
+
+    #provides setting to save results of crawl to csv
+    custom_settings= {
+        'FEEDS': {
+            'ZZ_NFCU.csv':{'format':'csv', 'overwrite': True},
+            },
+    }
+
+    def parse(self, response):
+        
+        #provides css locator map for information to be scraped and returned
+        NFCU_Credit_card = response.css('div>p:nth-of-type(4)>strong.global-rates-bar__rate::text').extract()
+        
+        yield {'Credit_Card': NFCU_Credit_card}
+###########################################
+##USAA Spider##
+
+import scrapy
+
+#define the spider parameters
+class USAASpider(scrapy.Spider):
+
+    #how to call the spider
+    name = "USAA"  
+
+    #URL that spider is crawling to
+    start_urls = [
+        "https://www.usaa.com/inet/wc/banking_credit_cards_main?wa_ref=pub_home_lf_bank_credit_cards"
+    ]
+
+    #provides setting to save results of crawl to csv
+    custom_settings= {
+        'FEEDS': {
+            'ZZ_USAA.csv':{'format':'csv', 'overwrite': True},
+            },
+    }             
+
+    def parse(self, response):
+       
+       #provides css locator map for information to be scraped and returned
+       USAA_Credit_Card = response.css('section.all-cards>div:nth-child(1)>div:nth-child(2) div.card-rates-preview>div>p>span:nth-of-type(1)::text').extract()
+
+	 
+       yield {'USAA_Credit_Card': USAA_Credit_Card}
+###########################################
+##Project.py python## 
+
+#importing pandas and numpy for the ability to aggregate and format the data as needed
+import pandas as pd
+import numpy as np
+
+#importing csv for the ability to save the information in an easily extracted format
+import csv
+
+#Calling both spiders from their respective directories
+from Project.spiders.quotes_spider import NFCUSpider
+from Project.spiders.USAA import USAASpider
+
+#importing the crawler process to activate the spiders and allow the script to run using the project settings without having to manually provide them again inside the crawler script
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
+
+#defining the Python project to call the spiders to crawl
+def Project():
+    settings = get_project_settings()
+    process = CrawlerProcess(settings)
+    process.crawl(QuoteSpider)
+    process.crawl(USAASpider)
+    process.start()
+
+#prevents failure to process due to process 0 naming loop
+if __name__ == '__main__':
+    Project()
+
+#retrieves the csv files created by the spiders and prints them into a response
+with open('ZZ_NFCU.csv', 'r') as read_obj:
+
+    csv_reader = csv.reader(read_obj)
+
+    list_of_csv = list(csv_reader)
+
+    print(list_of_csv)
+
+with open('ZZ_USAA.csv', 'r') as read_obj:
+
+    csv_reader = csv.reader(read_obj)
+
+    list_of_csv = list(csv_reader)
+
+    print(list_of_csv)
