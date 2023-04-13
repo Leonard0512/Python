@@ -1,0 +1,88 @@
+##SP_Project.py python## 
+
+#importing pandas and numpy for the ability to aggregate and format the data as needed
+import pandas as pd
+import numpy as np
+
+#importing csv for the ability to save the information in an easily extracted format
+import csv
+
+#Calling both spiders from their respective directories
+from Project.spiders.SharePoint import SharePointSpider
+
+#importing the crawler process to activate the spiders and allow the script to run using the project settings without having to manually provide them again inside the crawler script
+from scrapy.crawler import CrawlerProcess
+from scrapy.utils.project import get_project_settings
+
+#defining the Python project to call the spiders to crawl
+def Project():
+    settings = get_project_settings()
+    process = CrawlerProcess(settings)
+    process.crawl(SharePointSpider)
+
+    #Insert the spider for each SharePoint intake form to be scraped
+    
+    process.start()
+
+#prevents failure to process due to process 0 naming loop
+if __name__ == '__main__':
+    Project()
+
+#retrieves the csv files created by the spiders and prints them into a response
+with open('ZZ_SharePoint.csv', 'r') as read_obj:
+
+    csv_reader = csv.reader(read_obj)
+
+    list_of_csv = list(csv_reader)
+
+    print(list_of_csv)
+
+#insert with open statement for each spider csv file
+###########################################
+##SharePoint Spider##
+
+import scrapy
+
+#define the spider parameters
+class SharePointSpider(scrapy.Spider):
+
+    #how to call the spider
+    name = "SharePoint"  
+
+    #URL that spider is crawling to
+    start_urls = [
+        "https://sharepoint.nfcu.net/sites/topics/LDP/Lists/Blog%20Test/AllItems.aspx"
+    ]
+
+    #provides setting to save results of crawl to csv
+    custom_settings= {
+        'FEEDS': {
+            'ZZ_SharePoint.csv':{'format':'csv', 'overwrite': True},
+            },
+    }             
+
+    def start_requests(self, response):
+        return scrapy.FormRequest.from_response(
+            response,
+            formdata={'username': '50028', 'password': 'Silly I'm not actually putting my PW'},
+            callback=self.after_login
+        )
+
+    def after_login(self, response):
+        if authentication_failed(response):
+            self.logger.error("Login failed")
+            return
+
+    def parse(self, response):
+       IDs = response.css('var.WPQ2ListData')
+
+       for ID in IDs:
+            yield {
+                'SharePoint_ID': ID.css('ID::text').extract()
+                'SharePoint_group_1': ID.css('group_1::text').extract()
+                'SharePoint_JobTitle': ID.css('JobTitle::text').extract()
+                'SharePoint_Branch': ID.css('Branch::text').extract()
+                'SharePoint_field2': ID.css('field2::text').extract()
+                'SharePoint_field5': ID.css('field5::text').extract()
+                'SharePoint_Created_FriendlyDisplay': ID.css('Created.FriendlyDisplay::text').extract()
+            }
